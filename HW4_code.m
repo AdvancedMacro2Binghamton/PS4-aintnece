@@ -15,10 +15,13 @@ z=exp(lz');
 P=lzprob^1000;
 N_s=sum(P(1,:).*z);
 
-% Discretization of assets
 a_min=a_bar;
 a_max=7;
 num_a=500;
+
+d=1;
+while d>1e-5
+% Discretization of assets
 
 a=linspace(a_min,a_max,num_a);
 
@@ -28,7 +31,7 @@ k_max=a_max;
 
 dis=1;
 
-while abs(dis)>=0.01;
+while abs(dis)>=0.01
     k_guess=(k_min+k_max)/2;
     r=alpha*(N_s/k_guess)^(1-alpha)+(1-delta);
     w=(1-alpha)*(k_guess/N_s)^alpha;
@@ -83,18 +86,24 @@ while abs(dis)>=0.01;
         k_min=k_guess;
     end
 end
+d=Mu(end,end);
+a_max=a_max+1;
+end
 % Policy functions graph
 
+figure;
 plot(a,pol_fn);
+title('Policy Function with different Z');
+legendcell=cellstr(num2str(z'));
+legend(legendcell,'Location','northwest');
 
 % Wealth Distribution
 
 wd=bsxfun(@times,Mu,a);
 figure;
 plot(a,wd);
-axis([5 7.5 0 1]);
-axis('auto y');
-title('Wealth Distribution');
+title('Wealth Distribution with Different Z');
+legend(legendcell,'Location','northwest');
 
 % Lorenz Curve & Gini Coefficient
 w=repmat(reshape(a,[num_a 1]),numel(z),1);

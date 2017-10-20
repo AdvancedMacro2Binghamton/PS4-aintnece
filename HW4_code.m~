@@ -15,6 +15,7 @@ z=exp(lz');
 P=lzprob^1000;
 N_s=sum(P(1,:).*z);
 
+while d>1e-3
 % Discretization of assets
 a_min=a_bar;
 a_max=7;
@@ -28,7 +29,7 @@ k_max=a_max;
 
 dis=1;
 
-while dis>=0.01;
+while abs(dis)>=0.01;
     k_guess=(k_min+k_max)/2;
     r=alpha*(N_s/k_guess)^(1-alpha)+(1-delta);
     w=(1-alpha)*(k_guess/N_s)^alpha;
@@ -39,15 +40,15 @@ while dis>=0.01;
     ret(cons<0)=-Inf;
     
     % INITIAL VALUE FUNCTION GUESS
-    v_guess = zeros(2, num_a);
+    v_guess = zeros(numel(z), num_a);
     
     % VALUE FUNCTION ITERATION
     v_tol = 1;
     while v_tol >1e-06
         % CONSTRUCT RETURN + EXPECTED CONTINUATION VALUE
-        value_mat=ret+beta*permute(PI*v_guess,[3 2 1]);
+        value_mat=ret+beta*permute(lzprob*v_guess,[3 2 1]);
         % CHOOSE HIGHEST VALUE (ASSOCIATED WITH a' CHOICE)
-        [vfn pol_indx]=max(value_mat,[],2);
+        [vfn,pol_indx]=max(value_mat,[],2);
         vfn=permute(vfn,[3 1 2]);
         v_tol=max(max(abs(vfn-v_guess)));
         v_guess=vfn;
@@ -71,15 +72,49 @@ while dis>=0.01;
     for ii = 1:length(emp_ind)
         apr_ind = pol_indx(emp_ind(ii), a_ind(ii)); 
         MuNew(:, apr_ind) = MuNew(:, apr_ind) + ...
-            (PI(emp_ind(ii), :) * mass(ii))';
+            (lzprob(emp_ind(ii), :) * mass(ii))';
     end
     mu_tol=max(max(abs(MuNew-Mu)));
     Mu=MuNew;
     end
-    aggsav=sum(sum(Mu.*pol_fn));
-    if aggsav>0
-        q_min=q_guess;
+    dis=k_guess-sum(sum(Mu.*pol_fn));
+    if dis>0
+        k_max=k_guess;
     else
-        q_max=q_guess;
+        k_min=k_guess;
     end
 end
+d=Mu()
+% Policy functions graph
+
+figure;
+plot(a,pol_fn);
+title('Policy Function with different Z');
+legendcell=cellstr(num2str(z'));
+legend(legendcell,'Location','northwest');
+
+% Wealth Distribution
+
+wd=bsxfun(@times,Mu,a);
+figure;
+plot(a,wd);
+axis([5.5 7.5 0 1]);
+axis('auto y');
+title('Wealth Distribution with Different Z');
+legend(legendcell,'Location','northwest');
+
+% Lorenz Curve & Gini Coefficient
+w=repmat(reshape(a,[num_a 1]),numel(z),1);
+mu=reshape(Mu,[numel(pol_fn) 1]);
+c=cumsum(sortrows([mu mu.*w w],3));
+L=bsxfun(@rdivide,c,c(end,:))*100;
+wi=repmat(w,1,numel(pol_fn));
+wj=repmat(w',numel(pol_fn),1);
+g=sum(sum(abs(wi-wj)))/sum(w)/numel(pol_fn)/2;
+figure;
+area(L(:,1),L(:,2));
+axis([0 100 0 100]);
+axis('auto y')
+hold on;
+fplot(@(x) x,':');
+title(['Gini Coefficient=',num2str(g)]);
