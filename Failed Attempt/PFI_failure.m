@@ -17,18 +17,15 @@ N_s=sum(P(1,:).*z);
 
 % Discretization of assets
 a_min=a_bar;
-a_max=7;
-num_a=12;
+a_max=80;
+num_a=100;
+k_min=20;
+k_max=40;
 
 a=linspace(a_min,a_max,num_a);
 
 % VFI
-k_min=a_bar;
-k_max=a_max;
-
-dis=1;
-
-    k_guess=(k_min+k_max)/2;
+    k_guess=106.74;
     r=alpha*(N_s/k_guess)^(1-alpha)+(1-delta);
     w=(1-alpha)*(k_guess/N_s)^alpha;
      % CURRENT RETURN (UTILITY) FUNCTION
@@ -48,6 +45,19 @@ dis=1;
         % CHOOSE HIGHEST VALUE (ASSOCIATED WITH a' CHOICE)
         [vfn,pol_indx]=max(value_mat,[],2);
         vfn=permute(vfn,[3 1 2]);
+        pol_indx = permute(pol_indx,[3 1 2]);
+        pol_fn=a(pol_indx);
+        c=bsxfun(@plus,bsxfun(@minus,r*a,pol_fn),permute(z*w*l_bar,[2 1 3]));
+        R=c.^(1-sigma)/(1-sigma);
+        for i=1:30
+            for j=1:5
+                vfnNEW=zeros(num_a,5);
+                vfnNEW(:,j)=transpose(vfn(j,pol_indx(j,:)));
+            end
+            vfn=R(:)+...
+            beta*makeQmatrix(pol_indx,lzprob)*vfnNEW(:);
+        vfn=reshape(vfn,[numel(z) num_a]);
+        end
         v_tol=max(max(abs(vfn-v_guess)));
         v_guess=vfn;
   
