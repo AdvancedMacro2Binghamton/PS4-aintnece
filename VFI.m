@@ -18,7 +18,7 @@ N_s=sum(P(1,:).*z);
 
 a_min=a_bar;
 a_max=80;
-num_a=50;
+num_a=500;
 pas=(a_min+a_max)/num_a;
 % Discretization of assets
 
@@ -99,11 +99,21 @@ end
        break;
    end
 end
-% Euler equation error
-c=bsxfun(@plus,bsxfun(@plus,-pol_fn,r*a),(z*w*l_bar)');
-cf=c(:,pol_indx');
-cf=reshape(cf,[numel(z) numel(a) numel(z)]);
-for i=1:numel(z)
-    c_prime(i,:)=lzprob(i,:)*cf(:,:,i);
-end
-Eulererror=sum(sum(abs(c.^(-sigma)-beta*c_prime.^(-sigma)*r).*Mu));
+% Policy functions graph
+
+figure;
+plot(a,pol_fn);
+title('Policy Function with different Z');
+legendcell=cellstr(num2str(z'));
+legend(legendcell,'Location','northwest');
+
+% Wealth Distribution
+figure;
+M=sum(Mu,1);
+plot(a,M);
+title('Wealth Distribution with Different Z');
+legend(legendcell,'Location','northwest');
+
+% Lorenz Curve & Gini Coefficient
+gini(M,a,true);
+
