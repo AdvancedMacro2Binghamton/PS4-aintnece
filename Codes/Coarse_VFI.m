@@ -57,7 +57,6 @@ while abs(dis)>=0.01
         [vfn, pol_indx]=max(v, [], 2);
         vfn=permute(vfn, [3 1 2]);
         v_tol = max(max(abs(vfn-v_guess)));
-        %v_tol = abs(max(max(vmax-v_guess)));
         v_guess=vfn;
     end
      % KEEP DECSISION RULE
